@@ -9,10 +9,7 @@ import (
 	"os/exec"
 )
 
-type Variables struct {
-	V1_0           string
-	Diff_V1_0_V1_1 string
-}
+type Variables struct{}
 
 func getWriter(out string) io.Writer {
 	if out == "" {
@@ -27,15 +24,17 @@ func getWriter(out string) io.Writer {
 	return w
 }
 
-func setVariables(v *Variables) {
-	v1_0, err := ioutil.ReadFile("demo-manifest/1-0.default.deploy.yml")
+func include(f string) string {
+	d, err := ioutil.ReadFile(f)
 	if err != nil {
 		panic(err)
 	}
-	v.V1_0 = string(v1_0)
+	return string(d)
+}
 
-	diff, _ := exec.Command("diff", "demo-manifest/1-0.default.deploy.yml", "demo-manifest/1-1.default.deploy.yml").CombinedOutput()
-	v.Diff_V1_0_V1_1 = string(diff)
+func diff(f1, f2 string) string {
+	out, _ := exec.Command("diff", f1, f2).CombinedOutput()
+	return string(out)
 }
 
 func safeHTML(val string) template.HTML {
@@ -44,6 +43,8 @@ func safeHTML(val string) template.HTML {
 
 func makeReadme(w io.Writer, v *Variables) {
 	funcMap := template.FuncMap{
+		"include":  include,
+		"diff":     diff,
 		"safeHTML": safeHTML,
 	}
 
@@ -62,7 +63,6 @@ func main() {
 	flag.Parse()
 
 	w := getWriter(out)
-	setVariables(v)
 
 	makeReadme(w, v)
 }

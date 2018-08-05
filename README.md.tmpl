@@ -33,7 +33,7 @@ Deploy simple spring-boot application.
 
 This is deployment manifest.
 ```yaml
-{{.V1_0 | safeHTML -}}
+{{ include "demo-manifest/1-0.default.deploy.yml" | safeHTML -}}
 ```
 
 Deploy and watch Pod status.
@@ -42,5 +42,5 @@ $ kubectl apply -f 1-1.default.deploy.yml && kubectl get pods -w
 ```
 
 ```
-{{.Diff_V1_0_V1_1 | safeHTML -}}
+{{ diff "demo-manifest/1-0.default.deploy.yml" "demo-manifest/1-1.default.deploy.yml" | safeHTML -}}
 ```
