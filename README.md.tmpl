@@ -94,6 +94,8 @@ After running Pod was terminated, new Pod was created..
 
 Because `maxUnavailable` is 1 by default so only one running Pod was terminated soon.
 
+Dividing the Pod's status into four, the status will change as follows.
+
 ![v1.1 deploy timeline](img/1-1.png)
 
 There are two solusitions that changing the value to 0 or increasing number of replicas.
@@ -122,3 +124,6 @@ demo-7744c47967-7vbvv   0/1       Terminating   0         1m
 
 hmm, still we can lose user's request.
 
+Firstly new Pod was created but old Pod was terminated before new Pod became Running status.
+
+![v1.1 deploy timeline](img/1-1.png)
