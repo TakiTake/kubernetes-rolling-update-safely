@@ -72,6 +72,11 @@ $ diff "demo-manifest/1-0.default.deploy.yml" "demo-manifest/1-1.default.deploy.
 ```
 
 ```sh
+# If you want to check http status also. Following command is usuful to check the status every 1 sec.
+$ while do curl -s -o /dev/null -w "`date` -- %{http_code}\n" http://192.168.99.100:32569/; sleep 1s; done
+```
+
+```sh
 $ kubectl apply -f demo-manifest/1-1.default.deploy.yml && kubectl get pods -w
 deployment.extensions "demo" configured
 NAME                    READY     STATUS        RESTARTS   AGE
@@ -88,6 +93,8 @@ demo-67fb9964f4-xmrwj   0/1       Terminating   0         1m
 After running Pod was terminated, new Pod was created..
 
 Because `maxUnavailable` is 1 by default so only one running Pod was terminated soon.
+
+![v1.1 deploy timeline](img/1-1.png)
 
 There are two solusitions that changing the value to 0 or increasing number of replicas.
 Changing the maxUnavailable to 0 this time to simplify the explanation.
@@ -114,3 +121,4 @@ demo-7744c47967-7vbvv   0/1       Terminating   0         1m
 ```
 
 hmm, still we can lose user's request.
+

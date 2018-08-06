@@ -86,7 +86,7 @@ cluster: Running
 kubectl: Correctly Configured: pointing to minikube-vm at 192.168.99.100
 ```
 
-Now you can access the demo application via Kubernetes Service. IP should be the minikube nodeIP and Port should be the NodePort of the demo Service.
+Now you can access the demo application with Kubernetes Service. IP should be the minikube nodeIP and Port should be the NodePort of the demo Service.
 
 This case URL is [http://192.168.99.100:32569/](http://192.168.99.100:32569/).
 
@@ -98,6 +98,11 @@ $ diff "demo-manifest/1-0.default.deploy.yml" "demo-manifest/1-1.default.deploy.
 <         appVersion: v1.0
 ---
 >         appVersion: v1.1
+```
+
+```sh
+# If you want to check http status also. Following command is usuful to check the status every 1 sec.
+$ while do curl -s -o /dev/null -w "`date` -- %{http_code}\n" http://192.168.99.100:32569/; sleep 1s; done
 ```
 
 ```sh
@@ -118,10 +123,12 @@ After running Pod was terminated, new Pod was created..
 
 Because `maxUnavailable` is 1 by default so only one running Pod was terminated soon.
 
+![v1.1 deploy timeline](img/1-1.png)
+
 There are two solusitions that changing the value to 0 or increasing number of replicas.
 Changing the maxUnavailable to 0 this time to simplify the explanation.
 
-### Change rolling update strategy
+### Changing strategy of rolling update
 
 ```
 $ diff "demo-manifest/1-1.default.deploy.yml" "demo-manifest/1-2.strategy.deploy.yml"
@@ -131,7 +138,24 @@ $ diff "demo-manifest/1-1.default.deploy.yml" "demo-manifest/1-2.strategy.deploy
 >       maxSurge: 1
 >       maxUnavailable: 0
 20c24
-<         appVersion: v1.0
+<         appVersion: v1.1
 ---
 >         appVersion: v1.2
 ```
+
+```sh
+$ kubectl apply -f demo-manifest/1-2.strategy.deploy.yml && kubectl get pods -w
+deployment.extensions "demo" configured
+NAME                    READY     STATUS        RESTARTS   AGE
+demo-644fd4dcb-pthk5    0/1       Pending       0          0s
+demo-7744c47967-7vbvv   1/1       Terminating   0          53s
+demo-644fd4dcb-pthk5   0/1       Pending   0         0s
+demo-644fd4dcb-pthk5   0/1       ContainerCreating   0         0s
+demo-7744c47967-7vbvv   0/1       Terminating   0         54s
+demo-644fd4dcb-pthk5   1/1       Running   0         2s
+demo-7744c47967-7vbvv   0/1       Terminating   0         1m
+demo-7744c47967-7vbvv   0/1       Terminating   0         1m
+```
+
+hmm, still we can lose user's request.
+
