@@ -20,9 +20,7 @@ $ minikube start
 $ eval $(minikube docker-env)
 
 # build demo application
-$ cd demo
 $ docker build -t takitake/demo demo
-$ cd -
 ```
 
 ## Demo scenarios
@@ -31,8 +29,8 @@ $ cd -
 
 Deploy simple spring-boot application.
 
-This is deployment manifest.
-```yaml
+```
+$ cat demo-manifest/1-0.default.deploy.yml
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -62,14 +60,78 @@ spec:
 status: {}
 ```
 
-Deploy and watch Pod status.
-```shell
-$ kubectl apply -f 1-1.default.deploy.yml && kubectl get pods -w
+Deploy and watch Pod status. You can see the state transition *ContainerCreating* to *Running*.
+
+```sh
+$ kubectl apply -f demo-manifest/1-0.default.deploy.yml && kubectl get pods -w
+deployment.extensions "demo" created
+NAME                    READY     STATUS              RESTARTS   AGE
+demo-67fb9964f4-xmrwj   0/1       ContainerCreating   0          0s
+demo-67fb9964f4-xmrwj   1/1       Running   0         1s
 ```
 
+Let's create the Service to access the deployed demo application.
+
+```sh
+$ kubectl apply -f demo-manifest/service.yml
+service "demo" created
+
+$ kubectl get service demo
+NAME      TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+demo      NodePort   10.111.204.139   <none>        8080:32569/TCP   23s
+
+$ minikube status
+minikube: Running
+cluster: Running
+kubectl: Correctly Configured: pointing to minikube-vm at 192.168.99.100
 ```
+
+Now you can access the demo application via Kubernetes Service. IP should be the minikube nodeIP and Port should be the NodePort of the demo Service.
+
+This case URL is [http://192.168.99.100:32569/](http://192.168.99.100:32569/).
+
+Next, in order to check the rolling update, try changing the appVersion from v1.0 to v1.1
+
+```sh
+$ diff "demo-manifest/1-0.default.deploy.yml" "demo-manifest/1-1.default.deploy.yml"
 20c20
 <         appVersion: v1.0
 ---
 >         appVersion: v1.1
+```
+
+```sh
+$ kubectl apply -f demo-manifest/1-1.default.deploy.yml && kubectl get pods -w
+deployment.extensions "demo" configured
+NAME                    READY     STATUS        RESTARTS   AGE
+demo-67fb9964f4-xmrwj   1/1       Terminating   0          1m
+demo-7744c47967-c2v9m   0/1       Pending       0          0s
+demo-7744c47967-c2v9m   0/1       ContainerCreating   0         0s
+demo-67fb9964f4-xmrwj   0/1       Terminating   0         1m
+demo-67fb9964f4-xmrwj   0/1       Terminating   0         1m
+demo-7744c47967-c2v9m   1/1       Running   0         2s
+demo-67fb9964f4-xmrwj   0/1       Terminating   0         1m
+demo-67fb9964f4-xmrwj   0/1       Terminating   0         1m
+```
+
+After running Pod was terminated, new Pod was created..
+
+Because `maxUnavailable` is 1 by default so only one running Pod was terminated soon.
+
+There are two solusitions that changing the value to 0 or increasing number of replicas.
+Changing the maxUnavailable to 0 this time to simplify the explanation.
+
+### Change rolling update strategy
+
+```
+$ diff "demo-manifest/1-1.default.deploy.yml" "demo-manifest/1-2.strategy.deploy.yml"
+12a13,16
+>   strategy:
+>     rollingUpdate:
+>       maxSurge: 1
+>       maxUnavailable: 0
+20c24
+<         appVersion: v1.0
+---
+>         appVersion: v1.2
 ```

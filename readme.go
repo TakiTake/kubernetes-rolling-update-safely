@@ -24,7 +24,7 @@ func getWriter(out string) io.Writer {
 	return w
 }
 
-func include(f string) string {
+func cat(f string) string {
 	d, err := ioutil.ReadFile(f)
 	if err != nil {
 		panic(err)
@@ -43,7 +43,7 @@ func safeHTML(val string) template.HTML {
 
 func makeReadme(w io.Writer, v *Variables) {
 	funcMap := template.FuncMap{
-		"include":  include,
+		"cat":      cat,
 		"diff":     diff,
 		"safeHTML": safeHTML,
 	}
