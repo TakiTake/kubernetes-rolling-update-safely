@@ -1,7 +1,6 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  creationTimestamp: null
   labels:
     app: demo
   name: demo
@@ -16,7 +15,6 @@ spec:
       maxUnavailable: 0
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: demo
       annotations:
@@ -24,10 +22,10 @@ spec:
     spec:
       containers:
       - image: takitake/demo
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: IfNotPresent # Don't pull container image everytime
         name: demo
         env:
-        - name: POD_NAME
+        - name: POD_NAME # Passing Pod name as a environment varible
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
