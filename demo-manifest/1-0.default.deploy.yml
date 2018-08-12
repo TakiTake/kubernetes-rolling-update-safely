@@ -10,7 +10,6 @@ spec:
   selector:
     matchLabels:
       app: demo
-  strategy: {}
   template:
     metadata:
       creationTimestamp: null
@@ -23,5 +22,8 @@ spec:
       - image: takitake/demo
         imagePullPolicy: IfNotPresent
         name: demo
-        resources: {}
-status: {}
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
