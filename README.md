@@ -86,9 +86,9 @@ cluster: Running
 kubectl: Correctly Configured: pointing to minikube-vm at 192.168.99.100
 ```
 
-Now you can access the demo application with Kubernetes Service. IP should be the minikube nodeIP and Port should be the NodePort of the demo Service.
+Now you can access the demo application through the Kubernetes Service. IP should be the minikube nodeIP and Port should be the NodePort of the demo Service.
 
-This case URL is [http://192.168.99.100:32569/](http://192.168.99.100:32569/). Or you only have to type `minikube service demo` then the URL is opened.
+This case URL is [http://192.168.99.100:32569/](http://192.168.99.100:32569/). Or you only have to execute `minikube service demo` then the URL is opened.
 
 Next, in order to check the rolling update, try changing the appVersion from v1.0 to v1.1
 
@@ -106,8 +106,6 @@ $ export DEMO_URL=$(minikube service demo --url)
 $ while do curl -s -w " -- `date` -- %{http_code}\n" $DEMO_URL; sleep 1s; done
 ```
 
-![health check](img/healthcheck.gif)
-
 ```sh
 $ kubectl apply -f demo-manifest/1-1.default.deploy.yml && kubectl get pods -w
 deployment "demo" configured
@@ -119,6 +117,8 @@ demo-7ff7477c9b-jf26z   0/1       Terminating   0         1m
 demo-7ff7477c9b-jf26z   0/1       Terminating   0         1m
 demo-7ff7477c9b-jf26z   0/1       Terminating   0         1m
 ```
+
+![health check v1.0-v1.1](img/healthcheck-v10-v11.gif)
 
 After existing Pod status became `Terminating` , new Pod status became `Running` ..
 
@@ -150,14 +150,16 @@ $ diff "demo-manifest/1-1.default.deploy.yml" "demo-manifest/1-2.strategy.deploy
 $ kubectl apply -f demo-manifest/1-2.strategy.deploy.yml && kubectl get pods -w
 deployment "demo" configured
 NAME                    READY     STATUS              RESTARTS   AGE
-demo-5b47cd65cd-q4lcj   0/1       ContainerCreating   0          0s
-demo-7fb4df47ff-zphkn   1/1       Running             0          3m
-demo-5b47cd65cd-q4lcj   1/1       Running   0         1s
-demo-7fb4df47ff-zphkn   1/1       Terminating   0         3m
-demo-7fb4df47ff-zphkn   0/1       Terminating   0         3m
-demo-7fb4df47ff-zphkn   0/1       Terminating   0         3m
-demo-7fb4df47ff-zphkn   0/1       Terminating   0         3m
+demo-5b47cd65cd-zg49d   0/1       ContainerCreating   0          0s
+demo-7fb4df47ff-hb8xx   1/1       Running             0          13m
+demo-5b47cd65cd-zg49d   1/1       Running   0         1s
+demo-7fb4df47ff-hb8xx   1/1       Terminating   0         13m
+demo-7fb4df47ff-hb8xx   0/1       Terminating   0         13m
+demo-7fb4df47ff-hb8xx   0/1       Terminating   0         13m
+demo-7fb4df47ff-hb8xx   0/1       Terminating   0         13m
 ```
+
+![health check v1.1-v1.2](img/healthcheck-v11-v12.gif)
 
 hmm, still we can lose user's request. Even though, new Pod status became `Running` before old Pod was terminated.
 
@@ -171,7 +173,7 @@ To fix this issue we need to tell Kubernetes when Application is ready expressly
 
 ### Define ready state of the application
 
-We can configure how to know the application is ready or not yet in manifest file. It is called `ReadinessProbe`. This demo application has healcheck endpoint thus it's the most easilest way that calling the endpoint with http GET request. More detail please see https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/ .
+We can configure how to confirm the application is ready or not yet in manifest file. It is called `ReadinessProbe`. This demo application has healcheck endpoint thus it's the most easilest way that calling the endpoint with http GET request. More detail please see https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/ .
 
 ```
 $ diff "demo-manifest/1-2.strategy.deploy.yml" "demo-manifest/1-3.readinessprobe.deploy.yml"
@@ -190,15 +192,17 @@ $ diff "demo-manifest/1-2.strategy.deploy.yml" "demo-manifest/1-3.readinessprobe
 $ kubectl apply -f demo-manifest/1-3.readinessprobe.deploy.yml && kubectl get pods -w
 deployment "demo" configured
 NAME                    READY     STATUS              RESTARTS   AGE
-demo-5b47cd65cd-q4lcj   1/1       Running             0          6m
-demo-c88bcc897-5nd24    0/1       ContainerCreating   0          0s
-demo-c88bcc897-5nd24   0/1       Running   0         2s
-demo-c88bcc897-5nd24   1/1       Running   0         8s
-demo-5b47cd65cd-q4lcj   1/1       Terminating   0         6m
-demo-5b47cd65cd-q4lcj   0/1       Terminating   0         6m
-demo-5b47cd65cd-q4lcj   0/1       Terminating   0         6m
-demo-5b47cd65cd-q4lcj   0/1       Terminating   0         6m
+demo-5b47cd65cd-zg49d   1/1       Running             0          6m
+demo-c88bcc897-h5dkg    0/1       ContainerCreating   0          1s
+demo-c88bcc897-h5dkg   0/1       Running   0         2s
+demo-c88bcc897-h5dkg   1/1       Running   0         17s
+demo-5b47cd65cd-zg49d   1/1       Terminating   0         7m
+demo-5b47cd65cd-zg49d   0/1       Terminating   0         7m
+demo-5b47cd65cd-zg49d   0/1       Terminating   0         7m
+demo-5b47cd65cd-zg49d   0/1       Terminating   0         7m
 ```
+
+![health check v1.2-v1.3](img/healthcheck-v12-v13.gif)
 
 Finally, we can rolling update safely!
 
