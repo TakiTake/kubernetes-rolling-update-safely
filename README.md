@@ -106,7 +106,7 @@ $ export DEMO_URL=$(minikube service demo --url)
 $ while do curl -s -w " -- `date` -- %{http_code}\n" $DEMO_URL; sleep 1s; done
 ```
 
-![health check](img/healthcheck.svg)
+![health check](img/healthcheck.gif)
 
 ```sh
 $ kubectl apply -f demo-manifest/1-1.default.deploy.yml && kubectl get pods -w
